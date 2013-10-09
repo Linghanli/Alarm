@@ -7,25 +7,11 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <TextView
-        android:id="@+id/textView1"
+        android:id="@+id/sentence"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="Time to Wake Up"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
-    <Button
-        android:id="@+id/button1"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Snooze"
-        android:onClick="snooze" />
-
-    <Button
-        android:id="@+id/button2"
-        style="?android:attr/buttonStyleSmall"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="TurnOff" />
 
 </LinearLayout>

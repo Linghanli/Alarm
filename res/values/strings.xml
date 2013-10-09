@@ -2,4 +2,11 @@
 
     <string name="app_name">AlarmManager</string>
 
+        
+	<string-array name="snooze_arrays">
+        <item>1 min</item>
+        <item>5 mins</item>
+        <item>10 mins</item>
+        <item>15 mins</item>
+    </string-array>
 </resources>

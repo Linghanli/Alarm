@@ -16,14 +16,13 @@ public class AlarmReceiver extends BroadcastReceiver
         	 /*PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         	 PowerManager.WakeLock wl = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "MyAlarmWakeLock");
         	 wl.acquire();*/
-	
+        	 //WakeLocker.acquire(context);
         	
                Toast.makeText(context, "Alarm Triggered", Toast.LENGTH_LONG).show();
                Intent i = new Intent();
                i.setClassName("com.ece.alarmmanager", "com.ece.alarmmanager.AlarmActivity");
                i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-               context.startActivity(i);               
-
-             }
+               context.startActivity(i);  
+            }
       
 }
