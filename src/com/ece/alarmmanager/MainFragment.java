@@ -9,7 +9,10 @@ import android.app.Fragment;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,7 +21,9 @@ import android.widget.TextView;
 import android.widget.TimePicker;
 
 public class MainFragment extends Fragment {
-	 
+
+	 private static int SNOOZE_TIME;
+	 private static int [] snoozeTimes = {1000, 2000, 4000, 8000};
 	 private Properties configProp;
 	 private Properties text_en;
 	 
@@ -105,7 +110,7 @@ public class MainFragment extends Fragment {
 			if (diffMinutes == 0 && diffHours == 0)
 			{
 				tView.setText("Alarm triggers in less than 1 min");
-				diff = 3000;
+				diff = SNOOZE_TIME;
 			}
 			else
 				tView.setText("Alarm triggers in "+diffHours+" hours "+diffMinutes+ "mins" );
@@ -132,4 +137,11 @@ public class MainFragment extends Fragment {
                 .commit();
     }
 
+    @Override
+    public void onStart() {
+    	super.onStart();
+		SharedPreferences settings = getActivity().getSharedPreferences(SettingsFragment.PREF, 0);
+		SNOOZE_TIME = snoozeTimes[settings.getInt("p2", 0)];
+		
+    }
 }

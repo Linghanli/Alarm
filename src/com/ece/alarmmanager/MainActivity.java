@@ -1,22 +1,13 @@
 package com.ece.alarmmanager;
 
-import java.io.InputStream;
-import java.util.Calendar;
 import java.util.Properties;
 
-import com.ece.alarmmanager.R;
-
 import android.app.Activity;
-import android.app.AlarmManager;
 import android.app.FragmentManager;
-import android.app.PendingIntent;
-import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
-import android.view.View;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.TimePicker;
-import android.widget.Toast;
 
 public class MainActivity extends Activity implements FragmentManager.OnBackStackChangedListener
 {
@@ -28,7 +19,10 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 	 private TimePicker picker;
 	 private TextView tView;
 	 private boolean mShowingSettings = false;
-	
+	 @Override
+	 protected void onSaveInstanceState(Bundle outState) {
+	     Log.d("called", "now");
+	 }
 	  @Override
        public void onCreate(Bundle savedInstanceState){
 		  

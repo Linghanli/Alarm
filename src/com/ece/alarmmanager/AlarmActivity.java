@@ -25,6 +25,7 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -55,8 +56,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private SensorManager mSensorManager;  
 	  private List<Sensor> sensors;
 	  private Sensor mAccelerometer;	  
-	  private static final int SHAKE_THRESHOLD = 600;
-	  private static final int UPPER_SPEED_LIMIT = 1000000;
+	  private static int SHAKE_THRESHOLD = 1000;
+	  private static final int UPPER_SPEED_LIMIT = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -69,7 +70,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private boolean shaken = false;
 	  //shake detection
 	  private int sum;
-	  
+	  private float speed = 0;
 	  private MediaPlayer mPlayer;
 	  private int counter = 0;
 	 @Override
@@ -128,8 +129,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 							float y = event.values[1]; 
 							float z = event.values[2]; 
 							
-							float speed = Math.abs(x+y+z - last_x - last_y - last_z) / delay * 10000;
-							
+							//speed = Math.abs(x+y+z - last_x - last_y - last_z) / delay * 10000;
+							speed = Math.abs(z - last_z) / delay * 10000;
 							if (speed > SHAKE_THRESHOLD && speed < UPPER_SPEED_LIMIT){
 								if(firstShake==false){
 									firstShake = true;
@@ -185,6 +186,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         finish();
 	}
 	public void disable(){
+	    mSensorManager.unregisterListener(mySensorListener);
 		mPlayer.stop();
 		weatherService();
         //finish();
@@ -192,8 +194,14 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	// Ish's addition
 	protected void onResume() {
 	    super.onResume();
-
+	   // Log.d("Here1", "Here1");
+		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
+	  //  Log.d("HereJ", j + "");
+		SHAKE_THRESHOLD = SettingsFragment.THRESHOLD[settings.getInt("p1", 0)];
+//	    Log.d("Here3", "Here3");
 	    mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+
+	//    Log.d("Here4", "Here4");
 	    lastUpdate = System.currentTimeMillis();
 	}
 
