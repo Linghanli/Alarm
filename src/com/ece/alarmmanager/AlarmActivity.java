@@ -260,9 +260,13 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
     }
 	
 	public void speakOut() {
-   	 
+		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
+		Boolean weatherVoiceEnabled = settings.getBoolean("p3", true);
+		if(!weatherVoiceEnabled)
+			return;
+		
     	HashMap<String, String> hm = new HashMap<String,String>();
-    	//tts.setSpeechRate(0.95F);
+    	tts.setSpeechRate(0.95F);
     	//tts.setPitch(0.9F);
     	tts.setLanguage(Locale.US);
     	tts.setOnUtteranceProgressListener(new UtteranceProgressListener(){
