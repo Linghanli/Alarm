@@ -1,6 +1,20 @@
 package com.ece.alarmmanager;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringReader;
 import java.util.List;
+import java.util.Properties;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import android.app.Fragment;
 import android.content.Context;
@@ -13,8 +27,12 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.SeekBar;
 import android.widget.Spinner;
@@ -22,7 +40,7 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SettingsFragment extends Fragment {
+public class SettingsFragment extends Fragment implements AsyncResponse {
 //	Accelerometer Sensor
 	  private SensorManager mSensorManager;  
 	  private List<Sensor> sensors;
@@ -52,9 +70,13 @@ public class SettingsFragment extends Fragment {
 	private SeekBar tapSensitivity;
 	private Spinner snoozeSpinner;
 	private Switch weatherSwitch;
-	private EditText country;
+	private EditText city;
+	private Button citySearch;
 	
-	private Button updateButton;
+	private Properties configProp;
+	RetrieveXML asyncTask;
+	private String queryCity;
+	private String woeId;
 	
     public SettingsFragment() {
     }
@@ -62,6 +84,9 @@ public class SettingsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
             Bundle savedInstanceState) {
+    	//load config
+    	loadProperties();
+    	
     	//Accelerometer
         sum = 0;
         firstShake = false;
@@ -82,21 +107,34 @@ public class SettingsFragment extends Fragment {
     	tapSensitivity.setMax(NUM_THRESHOLD);
     	snoozeSpinner = (Spinner) v.findViewById(R.id.spinner1);
     	weatherSwitch = (Switch) v.findViewById(R.id.switch1);
-    	country = (EditText) v.findViewById(R.id.weather);
+       	city = (EditText) v.findViewById(R.id.weather);
+    	city.setEnabled(weatherSwitch.isChecked());
+    	citySearch = (Button)v.findViewById(R.id.citySearch);
+    	citySearch.setEnabled(weatherSwitch.isChecked());
+    	
+    	citySearch.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View arg0) {			
+				if (city.getText().toString() != null && city.getText().toString().length() > 0)
+					searchCity(city.getText().toString());		
+			}
+    		
+    	});
+    	
+    	weatherSwitch.setOnCheckedChangeListener(new OnCheckedChangeListener(){
+
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+					city.setEnabled(isChecked);	
+					citySearch.setEnabled(isChecked);
+				}
+			});
+    	
     	//Shake Detection
     	tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
-		
-		updateButton = (Button) v.findViewById(R.id.updateSettings);
-		updateButton.setOnClickListener(new View.OnClickListener() {
-    		@Override
-    		public void onClick(View v) {
-    			updateSettings();
-    	}
-    	});
-		
-		
-		
-		return v;
+ 		return v;
     }
 
 	//sensor management     
@@ -147,11 +185,68 @@ public class SettingsFragment extends Fragment {
 		editor.putInt("p1", j = tapSensitivity.getProgress());
 		editor.putInt("p2", snoozeSpinner.getSelectedItemPosition());
 		editor.putBoolean("p3", weatherSwitch.isChecked());
-		editor.putString("p4", country.getText().toString());
+		editor.putString("p4", city.getText().toString());
+		editor.putString("p5", woeId);
 		SHAKE_THRESHOLD=THRESHOLD[j];
 		if (editor.commit())
-			Toast.makeText(getActivity(), "Updated", Toast.LENGTH_SHORT).show();
+			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
 	}
+    
+	public void searchCity(String query){
+		hideSoftKeyboard();
+    	asyncTask = new RetrieveXML();
+    	asyncTask.delegate = this;
+		queryCity = query;
+		String baseUrl = configProp.getProperty("geoPlanetUrl");
+		String appId = configProp.getProperty("appid");
+		String url = baseUrl+"('"+query+"')?appid="+appId;
+		asyncTask.execute(url);
+	}
+	
+	@Override
+	public void processFinish(String output) {
+		if (output == null){
+			Toast.makeText(getActivity(), "Network Error", Toast.LENGTH_SHORT).show();
+			return;
+		}
+
+		Document doc = getDomElement(output);
+		NodeList n2 = doc.getElementsByTagName("locality1");
+		Element ele2 = (Element) n2.item(0);
+			
+		if (queryCity.equalsIgnoreCase(ele2.getTextContent())){
+			woeId = ele2.getAttribute("woeid");
+			Toast.makeText(getActivity(), "City Found", Toast.LENGTH_SHORT).show();
+		}
+		else{
+			woeId = null;
+			queryCity = null;
+			city.setText("");
+			Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+		}
+		
+	}
+	
+	public Document getDomElement(String xml){
+        Document doc = null;
+        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+        try {
+ 
+            DocumentBuilder db = dbf.newDocumentBuilder();
+ 
+            InputSource is = new InputSource();
+                is.setCharacterStream(new StringReader(xml));
+                doc = db.parse(is); 
+ 
+            } catch (ParserConfigurationException e) {
+                return null;
+            } catch (SAXException e) {
+                return null;
+            } catch (IOException e) {
+                 return null;
+            }
+            return doc;
+    }
 
     @Override
     public void onStart() {
@@ -166,15 +261,44 @@ public class SettingsFragment extends Fragment {
 		tapSensitivity.setProgress(s1);
 		snoozeSpinner.setSelection(s2);
 		weatherSwitch.setChecked(s3);
-		country.setText(s4);
+		city.setText(s4);
 		
     	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 		Log.d("onStart", "started");
     }
+    
     @Override
     public void onStop() {
 	    mSensorManager.unregisterListener(mySensorListener);
+	    updateSettings();
     	getFragmentManager().popBackStack();
     	super.onStop();
+    }
+    
+    @Override
+    public void onPause() {
+    	mSensorManager.unregisterListener(mySensorListener);
+	    updateSettings();
+	    super.onPause();
+    }
+    
+    private void loadProperties(){
+        
+        try {
+			InputStream fileStream = getActivity().getAssets().open("config.properties");
+			configProp = new Properties();
+			configProp.load(fileStream);
+	
+			fileStream.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    }
+    
+    private void hideSoftKeyboard(){
+        if(getActivity().getCurrentFocus()!=null && getActivity().getCurrentFocus() instanceof EditText){
+            InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(city.getWindowToken(), 0);
+        }
     }
 }

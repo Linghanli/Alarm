@@ -179,7 +179,6 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		
 		long setAlarm = System.currentTimeMillis() + diff;
 		
-		
 		Intent intentAlarm = new Intent(this, AlarmReceiver.class);
 	    AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         alarmManager.set(AlarmManager.RTC_WAKEUP, setAlarm, PendingIntent.getBroadcast(this,1,intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
@@ -206,7 +205,13 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	}
 
 	public void weatherService(){
-		asyncTask.execute("http://weather.yahooapis.com/forecastrss?w=24150327&u=c");
+		String url = configProp.getProperty("weatherUrl");
+		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
+		String woeId = settings.getString("p5", null);
+		
+		if (woeId == null)
+			return;
+		asyncTask.execute(url+woeId);
 	}
 	
 	@Override
@@ -231,7 +236,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 			
 			weatherInfo.add(ele3.getAttribute("high"));
 			weatherInfo.add(ele3.getAttribute("low"));
-			weatherInfo.add(processCondition(ele3.getAttribute("code")));
+			weatherInfo.add(ele3.getAttribute("code"));
 		}
 		speakOut();
 
@@ -331,16 +336,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 			return text_en.getProperty("good_evening");
 	}
 	
-	private String processCondition(String val){
-		if(val.indexOf("AM") >= 0)
-			val = val.replace("AM", "morning");
-		else if(val.indexOf("PM") >= 0)
-			val = val.replace("PM", "afternoon");
-		
-		return val;
-	}
-	
-    public void sayGoodday(){
+	public void sayGoodday(){
     	tts.setOnUtteranceProgressListener(null);
     	String text = "Have a wonderful day";
     	tts.speak(text, TextToSpeech.QUEUE_ADD, null);
