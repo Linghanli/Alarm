@@ -216,29 +216,32 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	
 	@Override
 	public void processFinish(String output) {
-		//xmlResult = output;
-		if (output == null){
-			wInfoRetrieved = false;
+		
+		try{
+			if (output == null){
+				wInfoRetrieved = false;
+			}
+			else{
+				wInfoRetrieved = true;
+				
+				weatherInfo = new ArrayList<String>();
+				Document doc = getDomElement(output);
+				NodeList n2 = doc.getElementsByTagName("yweather:condition");
+				Element ele2 = (Element) n2.item(0);
+				
+				weatherInfo.add(ele2.getAttribute("temp"));
+				weatherInfo.add(ele2.getAttribute("code"));
+				
+				NodeList n3 = doc.getElementsByTagName("yweather:forecast");
+				Element ele3 = (Element) n3.item(0);
+				
+				weatherInfo.add(ele3.getAttribute("high"));
+				weatherInfo.add(ele3.getAttribute("low"));
+				weatherInfo.add(ele3.getAttribute("code"));
+			}
+			speakOut();
 		}
-		else{
-			wInfoRetrieved = true;
-			
-			weatherInfo = new ArrayList<String>();
-			Document doc = getDomElement(output);
-			NodeList n2 = doc.getElementsByTagName("yweather:condition");
-			Element ele2 = (Element) n2.item(0);
-			
-			weatherInfo.add(ele2.getAttribute("temp"));
-			weatherInfo.add(ele2.getAttribute("code"));
-			
-			NodeList n3 = doc.getElementsByTagName("yweather:forecast");
-			Element ele3 = (Element) n3.item(0);
-			
-			weatherInfo.add(ele3.getAttribute("high"));
-			weatherInfo.add(ele3.getAttribute("low"));
-			weatherInfo.add(ele3.getAttribute("code"));
-		}
-		speakOut();
+		catch(Exception ex){return;}
 
 	}
 	

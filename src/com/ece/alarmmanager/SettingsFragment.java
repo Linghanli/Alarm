@@ -210,20 +210,23 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 			return;
 		}
 
-		Document doc = getDomElement(output);
-		NodeList n2 = doc.getElementsByTagName("locality1");
-		Element ele2 = (Element) n2.item(0);
-			
-		if (queryCity.equalsIgnoreCase(ele2.getTextContent())){
-			woeId = ele2.getAttribute("woeid");
-			Toast.makeText(getActivity(), "City Found", Toast.LENGTH_SHORT).show();
+		try {
+			Document doc = getDomElement(output);
+			NodeList n2 = doc.getElementsByTagName("locality1");
+			Element ele2 = (Element) n2.item(0);
+				
+			if (queryCity.equalsIgnoreCase(ele2.getTextContent())){
+				woeId = ele2.getAttribute("woeid");
+				Toast.makeText(getActivity(), "City Found", Toast.LENGTH_SHORT).show();
+			}
+			else{
+				woeId = null;
+				queryCity = null;
+				city.setText("");
+				Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+			}
 		}
-		else{
-			woeId = null;
-			queryCity = null;
-			city.setText("");
-			Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
-		}
+		catch (Exception ex){return;}
 		
 	}
 	
@@ -256,7 +259,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		Log.d("sensivity", s1+"");
 		int s2 = settings.getInt("p2", 0);
 		Log.d("snooze time", s2+"");
-		Boolean s3 = settings.getBoolean("p3", true);
+		Boolean s3 = settings.getBoolean("p3", false);
 		String s4 = settings.getString("p4", null);
 		tapSensitivity.setProgress(s1);
 		snoozeSpinner.setSelection(s2);
