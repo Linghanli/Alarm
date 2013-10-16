@@ -49,8 +49,8 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	  public static int [] THRESHOLD = {2000, 1000, 500};
 	  private static int NUM_THRESHOLD = 2;
 	  private static final int UPPER_SPEED_LIMIT = 3000;
-	  private static final int SHAKE_DURATION = 200;
-	  private static final int PROCESS_DURATION = 2000;
+	  private int SHAKE_DURATION = 200;
+	  private int PROCESS_DURATION = 2000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -77,6 +77,12 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	RetrieveXML asyncTask;
 	private String queryCity;
 	private String woeId;
+	
+	private static final int DEFAULT_SHAKE_DURATION = 300;
+	private static final int DEFAULT_PROCESS_DURATION = 2000;
+	
+	private EditText shakeDuration;
+	private EditText processDuration;
 	
     public SettingsFragment() {
     }
@@ -134,6 +140,9 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     	
     	//Shake Detection
     	tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
+    	
+    	shakeDuration = (EditText)v.findViewById(R.id.shake_duration);
+    	processDuration = (EditText)v.findViewById(R.id.process_duration);
  		return v;
     }
 
@@ -187,6 +196,8 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		editor.putBoolean("p3", weatherSwitch.isChecked());
 		editor.putString("p4", city.getText().toString());
 		editor.putString("p5", woeId);
+		editor.putString("p6", shakeDuration.getText().toString());
+		editor.putString("p7", processDuration.getText().toString());
 		SHAKE_THRESHOLD=THRESHOLD[j];
 		if (editor.commit())
 			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
@@ -265,6 +276,12 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		snoozeSpinner.setSelection(s2);
 		weatherSwitch.setChecked(s3);
 		city.setText(s4);
+		
+		String s6 = settings.getString("p6", Integer.toString(DEFAULT_SHAKE_DURATION));
+		shakeDuration.setText(s6);
+		
+		String s7 = settings.getString("p7", Integer.toString(DEFAULT_PROCESS_DURATION));
+		processDuration.setText(s7);
 		
     	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 		Log.d("onStart", "started");
