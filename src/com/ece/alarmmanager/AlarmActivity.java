@@ -58,6 +58,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private Sensor mAccelerometer;	  
 	  private static int SHAKE_THRESHOLD = 1000;
 	  private static final int UPPER_SPEED_LIMIT = 3000;
+	  private static final int SHAKE_DURATION = 1500;
+	  private static final int PROCESS_DURATION = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -145,13 +147,13 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 								}
 							}
 							else if(shaken == true){
-								if((curTime-beginShakeTime)>300){
+								if((curTime-beginShakeTime)>SHAKE_DURATION){
 									shaken = false;
 									sum = sum + 1;
 								}
 							}           		        	  
 
-							if(curTime - firstShakeTime > 2000){
+							if(curTime - firstShakeTime > PROCESS_DURATION){
 									if(shaken==true){
 										shaken = false;
 										sum = sum+1;

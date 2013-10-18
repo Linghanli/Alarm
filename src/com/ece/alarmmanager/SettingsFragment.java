@@ -28,11 +28,11 @@ public class SettingsFragment extends Fragment {
 	  private List<Sensor> sensors;
 	  private Sensor mAccelerometer;	  
 	  private static int SHAKE_THRESHOLD = 1000;
-	  public static int [] THRESHOLD = {2000, 1000, 500};
+	  public static int [] THRESHOLD = {2000, 1000, 400};
 	  private static int NUM_THRESHOLD = 2;
 	  private static final int UPPER_SPEED_LIMIT = 3000;
-	  private static final int SHAKE_DURATION = 200;
-	  private static final int PROCESS_DURATION = 2000;
+	  private static final int SHAKE_DURATION = 1500;
+	  private static final int PROCESS_DURATION = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
