@@ -56,16 +56,18 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private SensorManager mSensorManager;  
 	  private List<Sensor> sensors;
 	  private Sensor mAccelerometer;	  
-	  private static int SHAKE_THRESHOLD = 1000;
-	  private static final int DEFAULT_SHAKE_DURATION = 300;
-	  private static final int DEFAULT_PROCESS_DURATION = 2000;
-	  
+		
+		private static final int DEFAULT_THRESHOLD = 400;
+		private static final int DEFAULT_SHAKE_DURATION = 300;
+		private static final int DEFAULT_PROCESS_DURATION = 2000;
 	  private int shakeDuration;
 	  private int processDuration;
 	  
-	  private static final int UPPER_SPEED_LIMIT = 3000;
-	  private static final int SHAKE_DURATION = 1500;
-	  private static final int PROCESS_DURATION = 3000;
+	  private static int UPPER_SPEED_LIMIT = 3000;
+	  
+	  private static int SHAKE_THRESHOLD = 1000;
+	  private static int SHAKE_DURATION = 1500;
+	  private static int PROCESS_DURATION = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -154,12 +156,12 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 								}
 							}
 							else if(shaken == true){
-								if((curTime-beginShakeTime) > shakeDuration){
+								if((curTime-beginShakeTime) > SHAKE_DURATION){
 									shaken = false;
 									sum = sum + 1;
 								}
 							}    
-							if(curTime - firstShakeTime > processDuration){
+							if(curTime - firstShakeTime > PROCESS_DURATION){
 									if(shaken==true){
 										shaken = false;
 										sum = sum+1;
@@ -204,20 +206,25 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 
 	    //Values from SharedPreference
  		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
-		SHAKE_THRESHOLD = SettingsFragment.THRESHOLD[settings.getInt("p1", 0)];
+ 		
+		try{
+			int p1 = settings.getInt("p1",0);
+			SHAKE_THRESHOLD = (p1 != 0) ? p1:DEFAULT_THRESHOLD;
+		}
+		catch(Exception ex){SHAKE_THRESHOLD = DEFAULT_THRESHOLD;}
 
 		//Overriding the shake & process Duration if its available in preference
 		try{
-			String p6 = settings.getString("p6",null);
-			shakeDuration = (p6 != null) ? Integer.parseInt(p6):DEFAULT_SHAKE_DURATION;
+			int p6 = settings.getInt("p6",0);
+			SHAKE_DURATION = (p6 != 0) ? p6:DEFAULT_SHAKE_DURATION;
 		}
-		catch(Exception ex){shakeDuration = DEFAULT_SHAKE_DURATION;}
+		catch(Exception ex){SHAKE_DURATION = DEFAULT_SHAKE_DURATION;}
 		
 		try{
-			String p7 = settings.getString("p7",null);
-			processDuration = (p7 != null) ? Integer.parseInt(p7):DEFAULT_PROCESS_DURATION;
+			int p7 = settings.getInt("p7",0);
+			PROCESS_DURATION = (p7 != 0) ? p7:DEFAULT_PROCESS_DURATION;
 		}
-		catch(Exception ex){processDuration = DEFAULT_PROCESS_DURATION;}
+		catch(Exception ex){PROCESS_DURATION = DEFAULT_PROCESS_DURATION;}
 		
 	    mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 

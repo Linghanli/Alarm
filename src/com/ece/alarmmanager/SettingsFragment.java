@@ -45,12 +45,11 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	  private SensorManager mSensorManager;  
 	  private List<Sensor> sensors;
 	  private Sensor mAccelerometer;	  
-	  private static int SHAKE_THRESHOLD = 1000;
-	  public static int [] THRESHOLD = {2000, 1000, 400};
-	  private static int NUM_THRESHOLD = 2;
-	  private static final int UPPER_SPEED_LIMIT = 3000;
-	  private int SHAKE_DURATION = 200;
-	  private int PROCESS_DURATION = 2000;
+	 // public static int [] THRESHOLD = {2000, 1000, 400};
+	 // private static int NUM_THRESHOLD = 2;
+	  private static int UPPER_SPEED_LIMIT = 3000;
+	  
+	  
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -67,7 +66,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	  private float speed=0;
 	  // Ish's section
 	public static final String PREF = "EceAlarmApp";
-	private SeekBar tapSensitivity;
+	//private SeekBar tapSensitivity;
 	private Spinner snoozeSpinner;
 	private Switch weatherSwitch;
 	private EditText city;
@@ -78,9 +77,15 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	private String queryCity;
 	private String woeId;
 	
+	private static final int DEFAULT_THRESHOLD = 400;
 	private static final int DEFAULT_SHAKE_DURATION = 300;
 	private static final int DEFAULT_PROCESS_DURATION = 2000;
-	
+
+	  private static int SHAKE_THRESHOLD = 1000;
+	  private int SHAKE_DURATION = 200;
+	  private int PROCESS_DURATION = 2000;
+	  
+	private EditText threshOld;
 	private EditText shakeDuration;
 	private EditText processDuration;
 	
@@ -109,8 +114,8 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		  //Ish's section
     	
     	View v = inflater.inflate(R.layout.activity_settings, container, false);
-    	tapSensitivity = (SeekBar) v.findViewById(R.id.seekBar1);
-    	tapSensitivity.setMax(NUM_THRESHOLD);
+    	//tapSensitivity = (SeekBar) v.findViewById(R.id.seekBar1);
+    	//tapSensitivity.setMax(NUM_THRESHOLD);
     	snoozeSpinner = (Spinner) v.findViewById(R.id.spinner1);
     	weatherSwitch = (Switch) v.findViewById(R.id.switch1);
        	city = (EditText) v.findViewById(R.id.weather);
@@ -141,8 +146,15 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     	//Shake Detection
     	tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
     	
+    	threshOld = (EditText)v.findViewById(R.id.threshold);
     	shakeDuration = (EditText)v.findViewById(R.id.shake_duration);
     	processDuration = (EditText)v.findViewById(R.id.process_duration);
+    	final Button updateButton = (Button) v.findViewById(R.id.update);
+    	updateButton.setOnClickListener(new View.OnClickListener() {
+            public void onClick(View v) {
+                updateSettings();
+            }
+        });
  		return v;
     }
 
@@ -179,7 +191,17 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 								sum = sum + 1;
 								tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
 							}
-						}           		        	    
+						}           
+						
+						if(curTime - firstShakeTime > PROCESS_DURATION){
+							if(shaken==true){
+								shaken = false;
+								sum = sum+1;
+							}
+							tapDetection.setText("Detected" + " " + Integer.toString(0) + " " + "taps");
+							firstShake=false;
+							sum = 0;
+					    }   			        	    
 				
 						last_x = x;
 						last_y = y;
@@ -191,14 +213,16 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
 		SharedPreferences.Editor editor = settings.edit();
 		int j; 
-		editor.putInt("p1", j = tapSensitivity.getProgress());
+		//editor.putInt("p1", j = tapSensitivity.getProgress());
 		editor.putInt("p2", snoozeSpinner.getSelectedItemPosition());
 		editor.putBoolean("p3", weatherSwitch.isChecked());
 		editor.putString("p4", city.getText().toString());
 		editor.putString("p5", woeId);
-		editor.putString("p6", shakeDuration.getText().toString());
-		editor.putString("p7", processDuration.getText().toString());
-		SHAKE_THRESHOLD=THRESHOLD[j];
+		
+		editor.putInt("p1", SHAKE_THRESHOLD = Integer.parseInt(threshOld.getText().toString()));
+		editor.putInt("p6", SHAKE_DURATION = Integer.parseInt(shakeDuration.getText().toString()));
+		editor.putInt("p7", PROCESS_DURATION = Integer.parseInt(processDuration.getText().toString()));
+		//SHAKE_THRESHOLD=THRESHOLD[j];
 		if (editor.commit())
 			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
 	}
@@ -266,22 +290,25 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     public void onStart() {
     	super.onStart();
 		SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
-		int s1 = settings.getInt("p1", NUM_THRESHOLD/2);
-		Log.d("sensivity", s1+"");
+		//int s1 = settings.getInt("p1", NUM_THRESHOLD/2);
+		//Log.d("sensivity", s1+"");
 		int s2 = settings.getInt("p2", 0);
-		Log.d("snooze time", s2+"");
+		//Log.d("snooze time", s2+"");
 		Boolean s3 = settings.getBoolean("p3", false);
 		String s4 = settings.getString("p4", null);
-		tapSensitivity.setProgress(s1);
+		//tapSensitivity.setProgress(s1);
 		snoozeSpinner.setSelection(s2);
 		weatherSwitch.setChecked(s3);
 		city.setText(s4);
 		
-		String s6 = settings.getString("p6", Integer.toString(DEFAULT_SHAKE_DURATION));
-		shakeDuration.setText(s6);
+		int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
+		threshOld.setText(Integer.toString(s1));
+		Log.d("s1 reached", s1+"");
+		int s6 = settings.getInt("p6", DEFAULT_SHAKE_DURATION);
+		shakeDuration.setText(Integer.toString(s6));
 		
-		String s7 = settings.getString("p7", Integer.toString(DEFAULT_PROCESS_DURATION));
-		processDuration.setText(s7);
+		int s7 = settings.getInt("p7", DEFAULT_PROCESS_DURATION);
+		processDuration.setText(Integer.toString(s7));
 		
     	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 		Log.d("onStart", "started");
