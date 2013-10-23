@@ -191,12 +191,14 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 								sum = sum + 1;
 								tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
 							}
+							
 						}           
 						
 						if(curTime - firstShakeTime > PROCESS_DURATION){
 							if(shaken==true){
 								shaken = false;
 								sum = sum+1;
+								//tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
 							}
 							tapDetection.setText("Detected" + " " + Integer.toString(0) + " " + "taps");
 							firstShake=false;
@@ -300,7 +302,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		snoozeSpinner.setSelection(s2);
 		weatherSwitch.setChecked(s3);
 		city.setText(s4);
-		
+		woeId = settings.getString("p5", null);
 		int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
 		threshOld.setText(Integer.toString(s1));
 		Log.d("s1 reached", s1+"");
