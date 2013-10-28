@@ -3,6 +3,8 @@ package com.ece.alarmmanager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Properties;
 
@@ -128,7 +130,14 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 			@Override
 			public void onClick(View arg0) {			
 				if (city.getText().toString() != null && city.getText().toString().length() > 0)
-					searchCity(city.getText().toString());		
+					try {
+						searchCity(city.getText().toString());
+					} catch (UnsupportedEncodingException e) {
+						woeId = null;
+						queryCity = null;
+						city.setText("");
+						Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+					}		
 			}
     		
     	});
@@ -218,8 +227,11 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		//editor.putInt("p1", j = tapSensitivity.getProgress());
 		editor.putInt("p2", snoozeSpinner.getSelectedItemPosition());
 		editor.putBoolean("p3", weatherSwitch.isChecked());
-		editor.putString("p4", city.getText().toString());
-		editor.putString("p5", woeId);
+		
+		if (woeId != null){
+			editor.putString("p4", city.getText().toString().trim());
+			editor.putString("p5", woeId);
+		}
 		
 		editor.putInt("p1", SHAKE_THRESHOLD = Integer.parseInt(threshOld.getText().toString()));
 		editor.putInt("p6", SHAKE_DURATION = Integer.parseInt(shakeDuration.getText().toString()));
@@ -229,11 +241,13 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
 	}
     
-	public void searchCity(String query){
+	public void searchCity(String query) throws UnsupportedEncodingException{
 		hideSoftKeyboard();
     	asyncTask = new RetrieveXML();
     	asyncTask.delegate = this;
-		queryCity = query;
+    	query = query.trim();
+		queryCity = query.trim();
+		query = URLEncoder.encode(query, "utf-8");
 		String baseUrl = configProp.getProperty("geoPlanetUrl");
 		String appId = configProp.getProperty("appid");
 		String url = baseUrl+"('"+query+"')?appid="+appId;
@@ -263,7 +277,12 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 				Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
 			}
 		}
-		catch (Exception ex){return;}
+		catch (Exception ex){
+			woeId = null;
+			queryCity = null;
+			city.setText("");
+			Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+		}
 		
 	}
 	
