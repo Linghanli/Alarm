@@ -33,12 +33,17 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
 
 public class AlarmActivity extends Activity implements OnInitListener, AsyncResponse{
 	// Ish's addition:
@@ -87,10 +92,15 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private int counter = 0;
 	  //voice management
 	  private boolean registerFlag;
+	  private WakeLock fullWakeLock;
+	  private Window window;
+	  
 	 @Override
      public void onCreate(Bundle savedInstanceState) 
     {
-         super.onCreate(savedInstanceState);
+		 createWakeLocks();
+		 wakeDevice();
+		 super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_alarm);
          //Ish's addition
          Log.d("onCreated is executed", "oncreate");
@@ -113,9 +123,12 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		  	mAccelerometer = sensors.get(0); 
 		  } 
          
+		  new PlayMusicTask().execute();
          
+    }
+	 
+	 private void playMusic(){
          mPlayer = MediaPlayer.create(AlarmActivity.this, R.raw.alarm);
-         //mPlayer.setWakeMode(this.getBaseContext(), PowerManager.PARTIAL_WAKE_LOCK);
          mPlayer.setOnCompletionListener(new OnCompletionListener(){
 
 			@Override
@@ -130,8 +143,21 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         	 
          });
          mPlayer.start();
-         
-    }
+	 }
+	 
+	 protected void createWakeLocks(){
+		    PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		    fullWakeLock = powerManager.newWakeLock((PowerManager.FULL_WAKE_LOCK | PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP), "FULL WAKE LOCK");
+		}
+	 
+	 	public void wakeDevice() {
+		    fullWakeLock.acquire();
+		    window = this.getWindow();
+		    window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+		    window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+		    window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+		    fullWakeLock.release();
+		}
 
 		//sensor management     
 			private final SensorEventListener mySensorListener = new SensorEventListener()  { 
@@ -402,7 +428,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void onPause() {
 		super.onPause();
 		
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -412,7 +438,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	@Override
 	public void onStop() {
 		super.onStop();
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -423,7 +449,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void onDestroy() {
 		super.onDestroy();
 		
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -502,5 +528,16 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    }
+    
+    private class PlayMusicTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+            while (!window.isActive()) {}
+            playMusic();
+            return null;
+        }
+
     }
 }
