@@ -72,8 +72,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private static int [] snoozeTimes = {1000, 2000, 4000, 8000};
       private static int SNOOZE_TIME;
 	  private static int SHAKE_THRESHOLD = 1000;
-	  private static int SHAKE_DURATION = 1500;
-	  private static int PROCESS_DURATION = 3000;
+	  private static long SHAKE_DURATION = 1500;
+	  private static long PROCESS_DURATION = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -253,13 +253,13 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		catch(Exception ex){SNOOZE_TIME = 4000;}
 		//Overriding the shake & process Duration if its available in preference
 		try{
-			int p6 = settings.getInt("p6",0);
+			long p6 = settings.getLong("p6",0);
 			SHAKE_DURATION = (p6 != 0) ? p6:DEFAULT_SHAKE_DURATION;
 		}
 		catch(Exception ex){SHAKE_DURATION = DEFAULT_SHAKE_DURATION;}
 		
 		try{
-			int p7 = settings.getInt("p7",0);
+			long p7 = settings.getLong("p7",0);
 			PROCESS_DURATION = (p7 != 0) ? p7:DEFAULT_PROCESS_DURATION;
 		}
 		catch(Exception ex){PROCESS_DURATION = DEFAULT_PROCESS_DURATION;}

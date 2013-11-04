@@ -36,77 +36,11 @@
     </LinearLayout>
         -->
 
-        <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp" 
-        android:layout_marginTop="10dp">
-
-       
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="16dp"
-            android:textColor="#ffffff"
-            android:text="Threshold" />
-        
-        
-        <EditText
-            android:id="@+id/threshold"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:inputType="number"/>
-
-
-    </LinearLayout>
-
-   <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp" 
-        android:layout_marginTop="10dp">
-
-       
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="16dp"
-            android:textColor="#ffffff"
-            android:text="Shake Duration" />
-        
-        
-        <EditText
-            android:id="@+id/shake_duration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:inputType="number"/>
-
-
-    </LinearLayout>
-   <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="40dp" 
-        android:layout_marginTop="10dp">
-            <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:textSize="16dp"
-            android:textColor="#ffffff"
-            android:text="Process Duration" />
-        
-        
-        <EditText
-            android:id="@+id/process_duration"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:inputType="number"/>
-
-
-    </LinearLayout>    
+   <Button
+       android:id="@+id/autoConfig"
+       android:layout_width="wrap_content"
+       android:layout_height="wrap_content"
+       android:text="Config Tap" />
     
     <LinearLayout  
         android:layout_width="match_parent"
