@@ -179,7 +179,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 									shaken = true;
 									firstShakeTime = curTime;
 									beginShakeTime = curTime;
-									mPlayer.stop();
+									if (mPlayer != null && mPlayer.isPlaying()){
+										mPlayer.stop();
+									}
 								}
 								if(shaken==false){
 									shaken = true;
@@ -228,7 +230,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void disable(){
 		registerFlag = false;
 	    mSensorManager.unregisterListener(mySensorListener);
-		mPlayer.stop();
+	    if (mPlayer != null && mPlayer.isPlaying()){
+	    	mPlayer.stop();
+	    }
 		weatherService();
         //finish();
 	}

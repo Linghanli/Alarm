@@ -10,15 +10,14 @@ import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.TimePicker;
+import android.widget.Toast;
 
 public class MainFragment extends Fragment {
 
@@ -32,6 +31,8 @@ public class MainFragment extends Fragment {
 	 
 	 private Button alarmButton;
 	 private Button settingsButton;
+	 private boolean disableButton;
+	 public static final String PREF = "EceAlarmApp";
 	
     public MainFragment() {
     }
@@ -45,11 +46,16 @@ public class MainFragment extends Fragment {
         tView = (TextView) v.findViewById(R.id.textView1);
         picker = (TimePicker) v.findViewById(R.id.picker1);
         
+        SharedPreferences settings = getActivity().getSharedPreferences(SettingsFragment.PREF, 0);
+        disableButton = settings.getBoolean("disableAlarmButton", false);
         alarmButton = (Button) v.findViewById(R.id.button1);
         alarmButton.setOnClickListener(new View.OnClickListener() {
     		@Override
     		public void onClick(View v) {
-    			scheduleAlarm();
+    			if (disableButton)
+    				disableAlarm();
+    			else
+    				scheduleAlarm();
     	}
     	});
         
@@ -83,7 +89,14 @@ public class MainFragment extends Fragment {
 
     public void scheduleAlarm()
     {
-	    	
+		    //Switch button to Disable Alarm button
+    		disableButton = true;
+		    SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
+		    SharedPreferences.Editor editor = settings.edit();
+		    editor.putBoolean("disableAlarmButton", disableButton);
+		    editor.commit();
+		    alarmButton.setText("Disable Alarm");
+    	
     		Calendar currenttime = Calendar.getInstance();
     		//System.currentTimeMillis();
 
@@ -126,6 +139,24 @@ public class MainFragment extends Fragment {
             //Toast.makeText(this, "Alarm Scheduled", Toast.LENGTH_LONG).show();
     }
     
+    public void disableAlarm(){
+    	disableButton = false;
+    	alarmButton.setText("Schedule Alarm");
+    	tView.setText("Set Alarm");
+    	Toast.makeText(getActivity().getApplicationContext(), "Alarm Disabled", Toast.LENGTH_LONG).show();
+    	
+    	SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
+		SharedPreferences.Editor editor = settings.edit();
+		editor.putBoolean("disableAlarmButton", disableButton);
+		editor.commit();
+    	
+    	Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
+    	PendingIntent pi = PendingIntent.getBroadcast(getActivity(),1,intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT);
+	    AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+        alarmManager.cancel(pi);
+        pi.cancel();      
+    }
+    
     private void flipCard() {
         getFragmentManager()
                 .beginTransaction()
@@ -143,5 +174,11 @@ public class MainFragment extends Fragment {
 		SharedPreferences settings = getActivity().getSharedPreferences(SettingsFragment.PREF, 0);
 		SNOOZE_TIME = snoozeTimes[settings.getInt("p2", 0)];
 		
+		disableButton = settings.getBoolean("disableAlarmButton", false);
+		
+		if (disableButton)
+			alarmButton.setText("Disable Alarm");
+		else
+			alarmButton.setText("Schedule Alarm");
     }
 }
