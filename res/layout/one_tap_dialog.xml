@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:layout_width="fill_parent" 
+    android:layout_height="fill_parent" 
+    android:orientation="vertical"
+    android:gravity="center_vertical"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+   <TextView
+	  android:id="@+id/shakeDetectionTest"
+	        android:layout_width="match_parent"
+	        android:layout_height="0dp" 
+	        android:layout_weight="1"
+	        android:text="Only detected 1 tap, Either:"
+	        android:textSize="32dp" />
+    
+		
+    <LinearLayout
+        android:layout_width="match_parent"
+ 		android:layout_height="0dp" 
+	    android:layout_weight="1">
+        
+        <Button
+            android:id="@+id/tapHarder"
+	        android:layout_width="0dp" 
+	        android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:text="Tap harder" />
+        <Button
+            android:id="@+id/tapSlower"
+	        android:layout_width="0dp" 
+	        android:layout_weight="1"
+            android:layout_height="match_parent"
+            android:text="Tap Slower" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -4,8 +4,10 @@ import java.util.Properties;
 
 import android.app.Activity;
 import android.app.FragmentManager;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -21,7 +23,8 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 	 private boolean mShowingSettings = false;
 	 @Override
 	 protected void onSaveInstanceState(Bundle outState) {
-	     Log.d("called", "now");
+	     //super.onSaveInstanceState(outState);
+	     Log.d("onSavedInstanceState", "now");
 	 }
 	  @Override
        public void onCreate(Bundle savedInstanceState){
@@ -33,6 +36,7 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
                 // If there is no saved instance state, add a fragment representing the
                 // front of the card to this activity. If there is saved instance state,
                 // this fragment will have already been added to the activity.
+            	Log.d("OnCreate", "savedInstanceState is Null");
                 getFragmentManager()
                         .beginTransaction()
                         .add(R.id.container, new MainFragment())
@@ -42,7 +46,17 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
             }
             
       }
-
+//	  @Override
+//	  public void onResume(){
+//
+//
+//          	mShowingSettings = (getFragmentManager().getBackStackEntryCount() > 0);
+//          
+//          
+//	  }
+	    public void autoConfig(View view){
+	    	Log.d("autoConfig", "reached 1");
+	    }
 		@Override
 		public void onBackStackChanged() {
 			// TODO Auto-generated method stub

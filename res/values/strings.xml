@@ -4,9 +4,9 @@
 
         
 	<string-array name="snooze_arrays">
-        <item>1 min</item>
-        <item>5 mins</item>
-        <item>10 mins</item>
-        <item>15 mins</item>
+        <item>1 second</item>
+        <item>2 seconds</item>
+        <item>4 seconds</item>
+        <item>8 seconds</item>
     </string-array>
 </resources>

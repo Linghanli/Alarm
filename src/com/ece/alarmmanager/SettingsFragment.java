@@ -3,6 +3,8 @@ package com.ece.alarmmanager;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Properties;
 
@@ -18,6 +20,7 @@ import org.xml.sax.SAXException;
 
 import android.app.Fragment;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -34,7 +37,6 @@ import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
-import android.widget.SeekBar;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
@@ -82,8 +84,8 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	private static final int DEFAULT_PROCESS_DURATION = 2000;
 
 	  private static int SHAKE_THRESHOLD = 1000;
-	  private int SHAKE_DURATION = 200;
-	  private int PROCESS_DURATION = 2000;
+	  private long SHAKE_DURATION = 200;
+	  private long PROCESS_DURATION = 2000;
 	  
 	private EditText threshOld;
 	private EditText shakeDuration;
@@ -97,7 +99,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
             Bundle savedInstanceState) {
     	//load config
     	loadProperties();
-    	
+    	Log.d("OnCreate View", "reached 1");
     	//Accelerometer
         sum = 0;
         firstShake = false;
@@ -116,19 +118,37 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     	View v = inflater.inflate(R.layout.activity_settings, container, false);
     	//tapSensitivity = (SeekBar) v.findViewById(R.id.seekBar1);
     	//tapSensitivity.setMax(NUM_THRESHOLD);
+    	final Button autoConfigButton = (Button) v.findViewById(R.id.autoConfig);
+    	autoConfigButton.setOnClickListener(
+    			new View.OnClickListener(){
+    				public void onClick(View v){
+    					getFragmentManager().beginTransaction().addToBackStack(null).commit();
+	    				Intent intent = new Intent(getActivity(), AutoConfig.class);	
+	    				getActivity().startActivity(intent);
+    				}
+    			}
+    	);
     	snoozeSpinner = (Spinner) v.findViewById(R.id.spinner1);
     	weatherSwitch = (Switch) v.findViewById(R.id.switch1);
        	city = (EditText) v.findViewById(R.id.weather);
     	city.setEnabled(weatherSwitch.isChecked());
     	citySearch = (Button)v.findViewById(R.id.citySearch);
     	citySearch.setEnabled(weatherSwitch.isChecked());
-    	
+
+    	Log.d("OnCreate View", "reached 2");
     	citySearch.setOnClickListener(new OnClickListener(){
 
 			@Override
 			public void onClick(View arg0) {			
 				if (city.getText().toString() != null && city.getText().toString().length() > 0)
-					searchCity(city.getText().toString());		
+					try {
+						searchCity(city.getText().toString());
+					} catch (UnsupportedEncodingException e) {
+						woeId = null;
+						queryCity = null;
+						city.setText("");
+						Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+					}		
 			}
     		
     	});
@@ -145,16 +165,18 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     	
     	//Shake Detection
     	tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
-    	
-    	threshOld = (EditText)v.findViewById(R.id.threshold);
-    	shakeDuration = (EditText)v.findViewById(R.id.shake_duration);
-    	processDuration = (EditText)v.findViewById(R.id.process_duration);
+    	//Change Here
+//    	threshOld = (EditText)v.findViewById(R.id.threshold);
+//    	shakeDuration = (EditText)v.findViewById(R.id.shake_duration);
+//    	processDuration = (EditText)v.findViewById(R.id.process_duration);
     	final Button updateButton = (Button) v.findViewById(R.id.update);
     	updateButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 updateSettings();
             }
         });
+
+    	Log.d("OnCreate View", "reached 3");
  		return v;
     }
 
@@ -218,22 +240,41 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		//editor.putInt("p1", j = tapSensitivity.getProgress());
 		editor.putInt("p2", snoozeSpinner.getSelectedItemPosition());
 		editor.putBoolean("p3", weatherSwitch.isChecked());
-		editor.putString("p4", city.getText().toString());
-		editor.putString("p5", woeId);
 		
-		editor.putInt("p1", SHAKE_THRESHOLD = Integer.parseInt(threshOld.getText().toString()));
-		editor.putInt("p6", SHAKE_DURATION = Integer.parseInt(shakeDuration.getText().toString()));
-		editor.putInt("p7", PROCESS_DURATION = Integer.parseInt(processDuration.getText().toString()));
+		if (woeId != null){
+			editor.putString("p4", city.getText().toString().trim());
+			editor.putString("p5", woeId);
+		}
+		
+//		editor.putInt("p1", SHAKE_THRESHOLD = Integer.parseInt(threshOld.getText().toString()));
+//		editor.putInt("p6", SHAKE_DURATION = Integer.parseInt(shakeDuration.getText().toString()));
+//		editor.putInt("p7", PROCESS_DURATION = Integer.parseInt(processDuration.getText().toString()));
 		//SHAKE_THRESHOLD=THRESHOLD[j];
 		if (editor.commit())
 			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
 	}
+
+//    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+//    	  super.onActivityResult()
+//    	  if (requestCode == 1) {
+//
+//    	     if(resultCode == RESULT_OK){      
+//    	         String result=data.getStringExtra("result");          
+//    	     }
+//    	     if (resultCode == RESULT_CANCELED) {    
+//    	         //Write your code if there's no result
+//    	     }
+//    	  }
+//    }
     
-	public void searchCity(String query){
+    
+	public void searchCity(String query) throws UnsupportedEncodingException{
 		hideSoftKeyboard();
     	asyncTask = new RetrieveXML();
     	asyncTask.delegate = this;
-		queryCity = query;
+    	query = query.trim();
+		queryCity = query.trim();
+		query = URLEncoder.encode(query, "utf-8");
 		String baseUrl = configProp.getProperty("geoPlanetUrl");
 		String appId = configProp.getProperty("appid");
 		String url = baseUrl+"('"+query+"')?appid="+appId;
@@ -263,7 +304,12 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 				Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
 			}
 		}
-		catch (Exception ex){return;}
+		catch (Exception ex){
+			woeId = null;
+			queryCity = null;
+			city.setText("");
+			Toast.makeText(getActivity(), "City Not Found", Toast.LENGTH_SHORT).show();
+		}
 		
 	}
 	
@@ -298,20 +344,23 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		//Log.d("snooze time", s2+"");
 		Boolean s3 = settings.getBoolean("p3", false);
 		String s4 = settings.getString("p4", null);
+
+    	Log.d("OnStart", "reached 4");
 		//tapSensitivity.setProgress(s1);
 		snoozeSpinner.setSelection(s2);
 		weatherSwitch.setChecked(s3);
 		city.setText(s4);
 		woeId = settings.getString("p5", null);
-		int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
-		threshOld.setText(Integer.toString(s1));
-		Log.d("s1 reached", s1+"");
-		int s6 = settings.getInt("p6", DEFAULT_SHAKE_DURATION);
-		shakeDuration.setText(Integer.toString(s6));
+	//	int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
+		//threshOld.setText(Integer.toString(s1));
+	//	Log.d("s1 reached", s1+"");
+	//	long s6 = settings.getLong("p6", DEFAULT_SHAKE_DURATION);
+		//shakeDuration.setText(Integer.toString(s6));
 		
-		int s7 = settings.getInt("p7", DEFAULT_PROCESS_DURATION);
-		processDuration.setText(Integer.toString(s7));
-		
+	//	long s7 = settings.getLong("p7", DEFAULT_PROCESS_DURATION);
+		//processDuration.setText(Integer.toString(s7));
+
+    	Log.d("OnStart", "reached 5");
     	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
 		Log.d("onStart", "started");
     }
@@ -321,6 +370,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	    mSensorManager.unregisterListener(mySensorListener);
 	    updateSettings();
     	getFragmentManager().popBackStack();
+	    Log.d("onStop is Called", "settingsFragment");
     	super.onStop();
     }
     
@@ -328,6 +378,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
     public void onPause() {
     	mSensorManager.unregisterListener(mySensorListener);
 	    updateSettings();
+	    Log.d("onpause is Called", "settingsFragment");
 	    super.onPause();
     }
     

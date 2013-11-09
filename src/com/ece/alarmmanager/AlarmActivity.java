@@ -33,12 +33,17 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.PowerManager;
+import android.os.PowerManager.WakeLock;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
 import android.speech.tts.TextToSpeech.OnInitListener;
+import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
+import android.view.Window;
+import android.view.WindowManager;
 
 public class AlarmActivity extends Activity implements OnInitListener, AsyncResponse{
 	// Ish's addition:
@@ -62,33 +67,44 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		private static final int DEFAULT_PROCESS_DURATION = 2000;
 	  private int shakeDuration;
 	  private int processDuration;
-	  
+	  //tap detection
 	  private static int UPPER_SPEED_LIMIT = 3000;
-	  
+	  private static int [] snoozeTimes = {1000, 2000, 4000, 8000};
+      private static int SNOOZE_TIME;
 	  private static int SHAKE_THRESHOLD = 1000;
-	  private static int SHAKE_DURATION = 1500;
-	  private static int PROCESS_DURATION = 3000;
+	  private static long SHAKE_DURATION = 1500;
+	  private static long PROCESS_DURATION = 3000;
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
 	  private long beginShakeTime;
 	  private long delay;
 	  private long curTime;
-	  private float last_x = 0;
-	  private float last_y = (float) 9.8;
-	  private float last_z = 0;
+//	  private float last_x = 0;
+//	  private float last_y = (float) 9.8;
+	  private float z = 10;
+	  private float last_z = 10;
 	  private boolean shaken = false;
 	  //shake detection
 	  private int sum;
 	  private float speed = 0;
 	  private MediaPlayer mPlayer;
 	  private int counter = 0;
+	  //voice management
+	  private boolean registerFlag;
+	  private WakeLock fullWakeLock;
+	  private Window window;
+	  
 	 @Override
      public void onCreate(Bundle savedInstanceState) 
     {
-         super.onCreate(savedInstanceState);
+		 createWakeLocks();
+		 wakeDevice();
+		 super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_alarm);
          //Ish's addition
+         Log.d("onCreated is executed", "oncreate");
+         registerFlag=true;
          tts = new TextToSpeech(this, this);
          mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
          loadProperties();
@@ -107,9 +123,12 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		  	mAccelerometer = sensors.get(0); 
 		  } 
          
+		  new PlayMusicTask().execute();
          
+    }
+	 
+	 private void playMusic(){
          mPlayer = MediaPlayer.create(AlarmActivity.this, R.raw.alarm);
-         //mPlayer.setWakeMode(this.getBaseContext(), PowerManager.PARTIAL_WAKE_LOCK);
          mPlayer.setOnCompletionListener(new OnCompletionListener(){
 
 			@Override
@@ -124,9 +143,21 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         	 
          });
          mPlayer.start();
-         
-    }
-
+	 }
+	 
+	 protected void createWakeLocks(){
+		    PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		    fullWakeLock = powerManager.newWakeLock((PowerManager.FULL_WAKE_LOCK | PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP), "FULL WAKE LOCK");
+		}
+	 
+	 	public void wakeDevice() {
+		    fullWakeLock.acquire();
+		    window = this.getWindow();
+		    window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+		    window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+		    window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+		    fullWakeLock.release();
+		}
 
 		//sensor management     
 			private final SensorEventListener mySensorListener = new SensorEventListener()  { 
@@ -136,9 +167,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 							delay = (curTime - lastUpdate);
 							lastUpdate = curTime;
 							
-							float x = event.values[0]; 
-							float y = event.values[1]; 
-							float z = event.values[2]; 
+//							float x = event.values[0]; 
+//							float y = event.values[1]; 
+							z = event.values[2]; 
 							
 							//speed = Math.abs(x+y+z - last_x - last_y - last_z) / delay * 10000;
 							speed = Math.abs(z - last_z) / delay * 10000;
@@ -148,7 +179,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 									shaken = true;
 									firstShakeTime = curTime;
 									beginShakeTime = curTime;
-									mPlayer.stop();
+									if (mPlayer != null && mPlayer.isPlaying()){
+										mPlayer.stop();
+									}
 								}
 								if(shaken==false){
 									shaken = true;
@@ -168,7 +201,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 									}
 									if(sum == 1){
 										Log.d("Sum", sum + "");
-										snooze(3000);
+										snooze(SNOOZE_TIME);
 									}
 									else if(sum > 1){
 										Log.d("Sum", sum + "");
@@ -178,8 +211,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 									sum = 0;
 							}   		        	  
 					
-							last_x = x;
-							last_y = y;
+//							last_x = x;
+//							last_y = y;
 							last_z = z;
 				} 
 				public void onAccuracyChanged(Sensor sensor, int accuracy) {}
@@ -195,8 +228,11 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         finish();
 	}
 	public void disable(){
+		registerFlag = false;
 	    mSensorManager.unregisterListener(mySensorListener);
-		mPlayer.stop();
+	    if (mPlayer != null && mPlayer.isPlaying()){
+	    	mPlayer.stop();
+	    }
 		weatherService();
         //finish();
 	}
@@ -204,6 +240,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	protected void onResume() {
 	    super.onResume();
 
+		 last_z = 10;
 	    //Values from SharedPreference
  		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
  		
@@ -212,23 +249,29 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 			SHAKE_THRESHOLD = (p1 != 0) ? p1:DEFAULT_THRESHOLD;
 		}
 		catch(Exception ex){SHAKE_THRESHOLD = DEFAULT_THRESHOLD;}
-
+		
+		try{
+			int p2 = settings.getInt("p2",0);
+			SNOOZE_TIME = (p2>=0 && p2<=3) ? snoozeTimes[p2]:4000;
+		}
+		catch(Exception ex){SNOOZE_TIME = 4000;}
 		//Overriding the shake & process Duration if its available in preference
 		try{
-			int p6 = settings.getInt("p6",0);
+			long p6 = settings.getLong("p6",0);
 			SHAKE_DURATION = (p6 != 0) ? p6:DEFAULT_SHAKE_DURATION;
 		}
 		catch(Exception ex){SHAKE_DURATION = DEFAULT_SHAKE_DURATION;}
 		
 		try{
-			int p7 = settings.getInt("p7",0);
+			long p7 = settings.getLong("p7",0);
 			PROCESS_DURATION = (p7 != 0) ? p7:DEFAULT_PROCESS_DURATION;
 		}
 		catch(Exception ex){PROCESS_DURATION = DEFAULT_PROCESS_DURATION;}
 		
-	    mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-
-	//    Log.d("Here4", "Here4");
+		if(registerFlag == true)
+			mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+	    
+	    Log.d("On Resume is executed", "again");
 	    lastUpdate = System.currentTimeMillis();
 	}
 
@@ -389,7 +432,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void onPause() {
 		super.onPause();
 		
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -399,7 +442,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	@Override
 	public void onStop() {
 		super.onStop();
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -410,7 +453,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void onDestroy() {
 		super.onDestroy();
 		
-		if (mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
 			tts.stop();
@@ -436,6 +479,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data)
     {
+    	Log.d("OnActivityResult", "done voice");
         if (requestCode == REQUEST_CODE && resultCode == RESULT_OK)
         {
             // Populate the wordsList with the String values the recognition engine thought it heard
@@ -488,5 +532,16 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    }
+    
+    private class PlayMusicTask extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... arg0) {
+            while (!window.isActive()) {}
+            playMusic();
+            return null;
+        }
+
     }
 }
