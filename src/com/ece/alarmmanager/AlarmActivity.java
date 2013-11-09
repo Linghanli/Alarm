@@ -102,7 +102,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		 wakeDevice();
 		 super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_alarm);
-         //Ish's addition
+
          Log.d("onCreated is executed", "oncreate");
          registerFlag=true;
          tts = new TextToSpeech(this, this);
@@ -126,6 +126,45 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		  new PlayMusicTask().execute();
          
     }
+
+		// Ish's addition
+		protected void onResume() {
+		    super.onResume();
+		    Log.d("On Resume is executed", "again");
+
+			 last_z = 10;
+		    //Values from SharedPreference
+	 		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
+	 		
+			try{
+				int p1 = settings.getInt("p1",0);
+				SHAKE_THRESHOLD = (p1 != 0) ? p1:DEFAULT_THRESHOLD;
+			}
+			catch(Exception ex){SHAKE_THRESHOLD = DEFAULT_THRESHOLD;}
+			
+			try{
+				int p2 = settings.getInt("p2",0);
+				SNOOZE_TIME = (p2>=0 && p2<=3) ? snoozeTimes[p2]:4000;
+			}
+			catch(Exception ex){SNOOZE_TIME = 4000;}
+			//Overriding the shake & process Duration if its available in preference
+			try{
+				long p6 = settings.getLong("p6",0);
+				SHAKE_DURATION = (p6 != 0) ? p6:DEFAULT_SHAKE_DURATION;
+			}
+			catch(Exception ex){SHAKE_DURATION = DEFAULT_SHAKE_DURATION;}
+			
+			try{
+				long p7 = settings.getLong("p7",0);
+				PROCESS_DURATION = (p7 != 0) ? p7:DEFAULT_PROCESS_DURATION;
+			}
+			catch(Exception ex){PROCESS_DURATION = DEFAULT_PROCESS_DURATION;}
+			
+			if(registerFlag == true)
+				mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+		    
+		    lastUpdate = System.currentTimeMillis();
+		}
 	 
 	 private void playMusic(){
          mPlayer = MediaPlayer.create(AlarmActivity.this, R.raw.alarm);
@@ -143,6 +182,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         	 
          });
          mPlayer.start();
+         Log.d("In PlayMusic()", "Music Started");
 	 }
 	 
 	 protected void createWakeLocks(){
@@ -236,45 +276,6 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		weatherService();
         //finish();
 	}
-	// Ish's addition
-	protected void onResume() {
-	    super.onResume();
-
-		 last_z = 10;
-	    //Values from SharedPreference
- 		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
- 		
-		try{
-			int p1 = settings.getInt("p1",0);
-			SHAKE_THRESHOLD = (p1 != 0) ? p1:DEFAULT_THRESHOLD;
-		}
-		catch(Exception ex){SHAKE_THRESHOLD = DEFAULT_THRESHOLD;}
-		
-		try{
-			int p2 = settings.getInt("p2",0);
-			SNOOZE_TIME = (p2>=0 && p2<=3) ? snoozeTimes[p2]:4000;
-		}
-		catch(Exception ex){SNOOZE_TIME = 4000;}
-		//Overriding the shake & process Duration if its available in preference
-		try{
-			long p6 = settings.getLong("p6",0);
-			SHAKE_DURATION = (p6 != 0) ? p6:DEFAULT_SHAKE_DURATION;
-		}
-		catch(Exception ex){SHAKE_DURATION = DEFAULT_SHAKE_DURATION;}
-		
-		try{
-			long p7 = settings.getLong("p7",0);
-			PROCESS_DURATION = (p7 != 0) ? p7:DEFAULT_PROCESS_DURATION;
-		}
-		catch(Exception ex){PROCESS_DURATION = DEFAULT_PROCESS_DURATION;}
-		
-		if(registerFlag == true)
-			mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-	    
-	    Log.d("On Resume is executed", "again");
-	    lastUpdate = System.currentTimeMillis();
-	}
-
 	public void weatherService(){
 		String url = configProp.getProperty("weatherUrl");
 		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
@@ -431,7 +432,8 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	@Override
 	public void onPause() {
 		super.onPause();
-		
+
+	    Log.d("onPause", "in onPause");
 		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
@@ -442,6 +444,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	@Override
 	public void onStop() {
 		super.onStop();
+	    Log.d("onStop", "in onStop");
 		if (mPlayer != null && mPlayer.isPlaying())
 			mPlayer.stop();
 		if (tts.isSpeaking())
@@ -539,6 +542,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         @Override
         protected Void doInBackground(Void... arg0) {
             while (!window.isActive()) {}
+            Log.d("In PlayMusicTask.doInBackground", "after window.isActive()");
             playMusic();
             return null;
         }
