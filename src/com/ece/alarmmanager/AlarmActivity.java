@@ -33,6 +33,7 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
+import android.media.MediaPlayer.OnPreparedListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.PowerManager;
@@ -98,14 +99,14 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	 @Override
      public void onCreate(Bundle savedInstanceState) 
     {
-		 createWakeLocks();
+		 //createWakeLocks();
 		 wakeDevice();
 		 super.onCreate(savedInstanceState);
          setContentView(R.layout.activity_alarm);
 
          Log.d("onCreated is executed", "oncreate");
          registerFlag=true;
-         tts = new TextToSpeech(this, this);
+        // tts = new TextToSpeech(this, this);
          mAudioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
          loadProperties();
          asyncTask.delegate = this;
@@ -122,8 +123,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		  { 
 		  	mAccelerometer = sensors.get(0); 
 		  } 
-         
-		  new PlayMusicTask().execute();
+		  //new PlayMusicTask().execute();
          
     }
 
@@ -131,8 +131,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		protected void onResume() {
 		    super.onResume();
 		    Log.d("On Resume is executed", "again");
-
-			 last_z = 10;
+		    tts = new TextToSpeech(this, this);
+		    new PlayMusicTask().execute();
+			last_z = 10;
 		    //Values from SharedPreference
 	 		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
 	 		
@@ -167,21 +168,32 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		}
 	 
 	 private void playMusic(){
+		 if(mPlayer != null){
+			 mPlayer.reset();
+		 }
          mPlayer = MediaPlayer.create(AlarmActivity.this, R.raw.alarm);
          mPlayer.setOnCompletionListener(new OnCompletionListener(){
 
 			@Override
-			public void onCompletion(MediaPlayer arg0) {
+			public void onCompletion(MediaPlayer mp) {
 				if (counter < 3){
 					counter++;
-					arg0.start();
+					mp.start();
 				}
 				else
 					weatherService();
 			}
         	 
          });
-         mPlayer.start();
+//         mPlayer.setOnPreparedListener( new MediaPlayer.OnPreparedListener() {
+//        	    @Override
+//        	    public void onPrepared(MediaPlayer mp) {
+//        	    	mp.start();
+//        	    }
+//        });
+         
+		if(!mPlayer.isPlaying())
+			mPlayer.start();
          Log.d("In PlayMusic()", "Music Started");
 	 }
 	 
@@ -191,12 +203,12 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		}
 	 
 	 	public void wakeDevice() {
-		    fullWakeLock.acquire();
+		  //  fullWakeLock.acquire();
 		    window = this.getWindow();
 		    window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
 		    window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
 		    window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
-		    fullWakeLock.release();
+		  //  fullWakeLock.release();
 		}
 
 		//sensor management     
@@ -434,8 +446,10 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		super.onPause();
 
 	    Log.d("onPause", "in onPause");
-		if (mPlayer != null && mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying()){
+			Log.d("media player's state in onPause", "mPlayer");
 			mPlayer.stop();
+		}
 		if (tts.isSpeaking())
 			tts.stop();
 	    mSensorManager.unregisterListener(mySensorListener);
@@ -445,8 +459,10 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	public void onStop() {
 		super.onStop();
 	    Log.d("onStop", "in onStop");
-		if (mPlayer != null && mPlayer.isPlaying())
+		if (mPlayer != null && mPlayer.isPlaying()){
+			Log.d("media player's state in onStop", "mPlayer");
 			mPlayer.stop();
+		}
 		if (tts.isSpeaking())
 			tts.stop();
 	    mSensorManager.unregisterListener(mySensorListener);
@@ -543,8 +559,14 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         protected Void doInBackground(Void... arg0) {
             while (!window.isActive()) {}
             Log.d("In PlayMusicTask.doInBackground", "after window.isActive()");
-            playMusic();
             return null;
+        }
+        @Override
+        protected void onPostExecute(Void arg0) {
+
+
+		    playMusic();
+            //return null;
         }
 
     }
