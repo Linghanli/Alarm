@@ -26,7 +26,7 @@ public class MainFragment extends Fragment {
 	 private Properties configProp;
 	 private Properties text_en;
 	 
-	 private TimePicker picker;
+	 //private TimePicker picker;
 	 private TextView tView;
 	 
 	 private Button alarmButton;
@@ -44,7 +44,7 @@ public class MainFragment extends Fragment {
         loadProperties();     
         
         tView = (TextView) v.findViewById(R.id.textView1);
-        picker = (TimePicker) v.findViewById(R.id.picker1);
+        //picker = (TimePicker) v.findViewById(R.id.picker1);
         
         SharedPreferences settings = getActivity().getSharedPreferences(SettingsFragment.PREF, 0);
         disableButton = settings.getBoolean("disableAlarmButton", false);
@@ -55,18 +55,20 @@ public class MainFragment extends Fragment {
     			if (disableButton)
     				disableAlarm();
     			else
-    				scheduleAlarm();
+    				flipCard();
     	}
     	});
         
-        settingsButton = (Button) v.findViewById(R.id.button2);
-        settingsButton.setOnClickListener(new View.OnClickListener() {
-    		@Override
-    		public void onClick(View v) {
-    			flipCard();
-    	}
-    	});
-        
+    	final Button autoConfigButton = (Button) v.findViewById(R.id.autoConfig);
+    	autoConfigButton.setOnClickListener(
+    			new View.OnClickListener(){
+    				public void onClick(View v){
+    					getFragmentManager().beginTransaction().addToBackStack(null).commit();
+	    				Intent intent = new Intent(getActivity(), AutoConfig.class);	
+	    				getActivity().startActivity(intent);
+    				}
+    			}
+    	);
         return v;
     }
     
@@ -87,62 +89,32 @@ public class MainFragment extends Fragment {
 		}
     }
 
+    private void flipCard() {
+        getFragmentManager()
+                .beginTransaction()
+                .setCustomAnimations(
+                        R.animator.card_flip_right_in, R.animator.card_flip_right_out,
+                        R.animator.card_flip_left_in, R.animator.card_flip_left_out)
+                .replace(R.id.container, new SettingsFragment())
+                .addToBackStack(null)
+                .commit();
+    }
+    
     public void scheduleAlarm()
     {
 		    //Switch button to Disable Alarm button
-    		disableButton = true;
-		    SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
-		    SharedPreferences.Editor editor = settings.edit();
-		    editor.putBoolean("disableAlarmButton", disableButton);
-		    editor.commit();
-		    alarmButton.setText("Disable Alarm");
-    	
-    		Calendar currenttime = Calendar.getInstance();
-    		//System.currentTimeMillis();
-
-    		Calendar alarmtime = Calendar.getInstance();
-	        alarmtime.set(Calendar.HOUR_OF_DAY, picker.getCurrentHour());
-	        alarmtime.set(Calendar.MINUTE, picker.getCurrentMinute());
-	        alarmtime.set(Calendar.SECOND, 0);
-	        alarmtime.set(Calendar.MILLISECOND, 0);
-	        
-	        long diff = 0;
-	        //compare alarm time to current time
-	        if ((alarmtime.get(Calendar.HOUR_OF_DAY)==currenttime.get(Calendar.HOUR_OF_DAY) && 
-	        		alarmtime.get(Calendar.MINUTE)==currenttime.get(Calendar.MINUTE))){
-	        	// Do nothing
-	        }
-	        else if (alarmtime.before(currenttime))	// add one day to alarm time
-	        	alarmtime.add(Calendar.DAY_OF_MONTH, 1); 
-	        
-	        
-	        diff =  alarmtime.getTimeInMillis() - System.currentTimeMillis();
-        	
-			long diffMinutes = diff / (60 * 1000) % 60;
-			long diffHours = diff / (60 * 60 * 1000) % 24;
-			if (diffMinutes == 0 && diffHours == 0)
-			{
-				tView.setText("Alarm triggers in less than 1 min");
-				diff = SNOOZE_TIME;
-			}
-			else
-				tView.setText("Alarm triggers in "+diffHours+" hours "+diffMinutes+ "mins" );
-			
-			
-			long setAlarm = System.currentTimeMillis() + diff;
-    		
-			
-			Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
-		    AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
-            alarmManager.set(AlarmManager.RTC_WAKEUP, setAlarm, PendingIntent.getBroadcast(getActivity(),1,intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+		    
+ 		
+//			Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
+//		    AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+//            alarmManager.set(AlarmManager.RTC_WAKEUP, setAlarm, PendingIntent.getBroadcast(getActivity(),1,intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
             
-            //Toast.makeText(this, "Alarm Scheduled", Toast.LENGTH_LONG).show();
     }
     
     public void disableAlarm(){
     	disableButton = false;
     	alarmButton.setText("Schedule Alarm");
-    	tView.setText("Set Alarm");
+    	tView.setText("Alarm is Unscheduled");
     	Toast.makeText(getActivity().getApplicationContext(), "Alarm Disabled", Toast.LENGTH_LONG).show();
     	
     	SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
@@ -157,16 +129,6 @@ public class MainFragment extends Fragment {
         pi.cancel();      
     }
     
-    private void flipCard() {
-        getFragmentManager()
-                .beginTransaction()
-                .setCustomAnimations(
-                        R.animator.card_flip_right_in, R.animator.card_flip_right_out,
-                        R.animator.card_flip_left_in, R.animator.card_flip_left_out)
-                .replace(R.id.container, new SettingsFragment())
-                .addToBackStack(null)
-                .commit();
-    }
 
     @Override
     public void onStart() {
@@ -175,9 +137,18 @@ public class MainFragment extends Fragment {
 		SNOOZE_TIME = snoozeTimes[settings.getInt("p2", 0)];
 		
 		disableButton = settings.getBoolean("disableAlarmButton", false);
-		
+	;
 		if (disableButton)
-			alarmButton.setText("Disable Alarm");
+		{	
+			alarmButton.setText("Cancel Alarm");
+			if (settings.getLong("diff", 1) == 10000)
+			{
+				tView.setText("Alarm triggers in less than 1 min");
+			}
+			else
+				tView.setText("Alarm triggers in "+settings.getLong("diffHours", 1)+" hours "+settings.getLong("diffMinutes", 1)+ "mins" );
+
+		}
 		else
 			alarmButton.setText("Schedule Alarm");
     }
