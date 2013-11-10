@@ -33,11 +33,8 @@ import android.hardware.SensorManager;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.media.MediaPlayer.OnCompletionListener;
-import android.media.MediaPlayer.OnPreparedListener;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.os.PowerManager;
-import android.os.PowerManager.WakeLock;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.speech.tts.TextToSpeech.OnInitListener;
@@ -93,8 +90,9 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	  private int counter = 0;
 	  //voice management
 	  private boolean registerFlag;
-	  private WakeLock fullWakeLock;
 	  private Window window;
+	  private boolean musicPlayed = false;
+	  private boolean fromWeatherService = false;
 	  
 	 @Override
      public void onCreate(Bundle savedInstanceState) 
@@ -123,7 +121,10 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		  { 
 		  	mAccelerometer = sensors.get(0); 
 		  } 
-		  //new PlayMusicTask().execute();
+		  
+		  musicPlayed = false;
+		  fromWeatherService = false;
+		 // new PlayMusicTask().execute();
          
     }
 
@@ -131,8 +132,15 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		protected void onResume() {
 		    super.onResume();
 		    Log.d("On Resume is executed", "again");
-		    tts = new TextToSpeech(this, this);
-		    new PlayMusicTask().execute();
+		    
+		    if (!fromWeatherService){
+			    
+			    tts = new TextToSpeech(this, this);
+			    
+			    if (!musicPlayed)
+			    	new PlayMusicTask().execute();
+		    }
+		    
 			last_z = 10;
 		    //Values from SharedPreference
 	 		SharedPreferences settings = getSharedPreferences(SettingsFragment.PREF, 0);
@@ -197,18 +205,11 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
          Log.d("In PlayMusic()", "Music Started");
 	 }
 	 
-	 protected void createWakeLocks(){
-		    PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
-		    fullWakeLock = powerManager.newWakeLock((PowerManager.FULL_WAKE_LOCK | PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP), "FULL WAKE LOCK");
-		}
-	 
 	 	public void wakeDevice() {
-		  //  fullWakeLock.acquire();
 		    window = this.getWindow();
 		    window.addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
 		    window.addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
 		    window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
-		  //  fullWakeLock.release();
 		}
 
 		//sensor management     
@@ -280,6 +281,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         finish();
 	}
 	public void disable(){
+		musicPlayed = true;
 		registerFlag = false;
 	    mSensorManager.unregisterListener(mySensorListener);
 	    if (mPlayer != null && mPlayer.isPlaying()){
@@ -369,9 +371,11 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 		        	state = 2;
 		        	startVoiceRecognitionActivity();
 		        } 
+				else if (uttId.equalsIgnoreCase("goodbye"))
+					finish();
 				
 			}
-
+			
 			@Override
 			public void onError(String arg0) {}
 			@Override
@@ -424,9 +428,10 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
 	}
 	
 	public void sayGoodday(){
-    	tts.setOnUtteranceProgressListener(null);
     	String text = "Have a wonderful day";
-    	tts.speak(text, TextToSpeech.QUEUE_ADD, null);
+    	HashMap<String, String> hm = new HashMap<String,String>();
+    	hm.put(TextToSpeech.Engine.KEY_PARAM_UTTERANCE_ID, "goodbye");
+    	tts.speak(text, TextToSpeech.QUEUE_ADD, hm);
     }
     
     private void startVoiceRecognitionActivity()
@@ -512,6 +517,7 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         	sayGoodday();
         }
         super.onActivityResult(requestCode, resultCode, data);
+        fromWeatherService = true;
     }
 	
     
@@ -559,13 +565,14 @@ public class AlarmActivity extends Activity implements OnInitListener, AsyncResp
         protected Void doInBackground(Void... arg0) {
             while (!window.isActive()) {}
             Log.d("In PlayMusicTask.doInBackground", "after window.isActive()");
+            playMusic();
             return null;
         }
         @Override
         protected void onPostExecute(Void arg0) {
 
 
-		    playMusic();
+		   // playMusic();
             //return null;
         }
 
