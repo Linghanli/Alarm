@@ -31,12 +31,12 @@ public class MainActivity extends Activity implements FragmentManager.OnBackStac
 		  
             super.onCreate(savedInstanceState);
             setContentView(R.layout.activity_flip);   
-
+            Log.d("OnCreate in MainActivity", "before everything");
             if (savedInstanceState == null) {
                 // If there is no saved instance state, add a fragment representing the
                 // front of the card to this activity. If there is saved instance state,
                 // this fragment will have already been added to the activity.
-            	Log.d("OnCreate", "savedInstanceState is Null");
+            	Log.d("OnCreate in MainActivity", "savedInstanceState is Null");
                 getFragmentManager()
                         .beginTransaction()
                         .add(R.id.container, new MainFragment())

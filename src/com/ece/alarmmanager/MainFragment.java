@@ -38,7 +38,8 @@ public class MainFragment extends Fragment {
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
+            Bundle savedInstanceState) 
+    {
         View v = inflater.inflate(R.layout.activity_main, container, false);
         loadProperties();     
         
@@ -63,7 +64,7 @@ public class MainFragment extends Fragment {
     	autoConfigButton.setOnClickListener(
     			new View.OnClickListener(){
     				public void onClick(View v){
-    					getFragmentManager().beginTransaction().addToBackStack(null).commit();
+    					//getFragmentManager().beginTransaction().addToBackStack(null).commit();
 	    				Intent intent = new Intent(getActivity(), AutoConfig.class);	
 	    				getActivity().startActivity(intent);
     				}
@@ -141,13 +142,22 @@ public class MainFragment extends Fragment {
 		if (disableButton)
 		{	
 			alarmButton.setText("Cancel Alarm");
-			if (settings.getLong("diff", 1) == 10000)
+			long diffOld = settings.getLong("diff", 1);
+
+			long currentTime = System.currentTimeMillis();
+			long diffNew = diffOld - (currentTime - settings.getLong("Told", 1));
+			
+			
+			if ( diffNew < 60000)
 			{
 				tView.setText("Alarm triggers in less than 1 min");
 			}
 			else
-				tView.setText("Alarm triggers in "+settings.getLong("diffHours", 1)+" hours "+settings.getLong("diffMinutes", 1)+ "mins" );
-
+			{
+				long diffMinutes = diffNew / (60 * 1000) % 60;
+				long diffHours = diffNew / (60 * 60 * 1000) % 24;
+				tView.setText("Alarm triggers in "+diffHours+" hours "+diffMinutes+ "mins" );
+			}
 		}
 		else
 		{
