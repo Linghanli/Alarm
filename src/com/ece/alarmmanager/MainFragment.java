@@ -1,7 +1,6 @@
 package com.ece.alarmmanager;
 
 import java.io.InputStream;
-import java.util.Calendar;
 import java.util.Properties;
 
 import android.app.AlarmManager;
@@ -11,12 +10,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.TimePicker;
 import android.widget.Toast;
 
 public class MainFragment extends Fragment {
@@ -47,6 +46,7 @@ public class MainFragment extends Fragment {
         //picker = (TimePicker) v.findViewById(R.id.picker1);
         
         SharedPreferences settings = getActivity().getSharedPreferences(SettingsFragment.PREF, 0);
+        Log.d("onCreateView in MainFragment", "disableButton");
         disableButton = settings.getBoolean("disableAlarmButton", false);
         alarmButton = (Button) v.findViewById(R.id.button1);
         alarmButton.setOnClickListener(new View.OnClickListener() {
@@ -137,7 +137,7 @@ public class MainFragment extends Fragment {
 		SNOOZE_TIME = snoozeTimes[settings.getInt("p2", 0)];
 		
 		disableButton = settings.getBoolean("disableAlarmButton", false);
-	;
+	
 		if (disableButton)
 		{	
 			alarmButton.setText("Cancel Alarm");
@@ -151,6 +151,7 @@ public class MainFragment extends Fragment {
 		}
 		else
 		{
+			Log.d("onStart in MainFragment", "Alarm is Unscheduled");
 			tView.setText("Alarm is Unscheduled");
 			alarmButton.setText("Schedule Alarm");
 		}

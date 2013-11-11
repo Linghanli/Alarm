@@ -6,14 +6,15 @@
     android:gravity="center_vertical"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-
     <TextView
         android:id="@+id/textView1"
-        android:gravity="center_horizontal"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="140dp"
+        android:gravity="center_horizontal"
         android:text=""
         android:textAppearance="?android:attr/textAppearanceLarge" />
+
 <!-- 
     <TimePicker
         android:id="@+id/picker1"
@@ -23,15 +24,21 @@
 
     <Button
         android:id="@+id/button1"
-        android:layout_marginTop="25dp"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:text="Schedule The Alarm" 
-        android:onClick="scheduleAlarm"/>
+        android:layout_marginBottom="20dp"
+        android:layout_marginTop="10dp"
+        android:onClick="scheduleAlarm"
+        android:paddingBottom="35dp"
+        android:paddingTop="35dp"
+        android:text="Schedule The Alarm"
+        android:textSize="32sp" />
+
     <Button
-       android:id="@+id/autoConfig"
-       android:layout_width="wrap_content"
-       android:layout_height="wrap_content"
-       android:text="Config Tap" />
+        android:id="@+id/autoConfig"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="80dp"
+        android:text="I feel Tap Detection is not accurate" />
 
 </LinearLayout>

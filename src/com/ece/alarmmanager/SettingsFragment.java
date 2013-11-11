@@ -330,8 +330,10 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		Calendar currentTime = Calendar.getInstance();
 		int s9 = settings.getInt("p9", currentTime.get(Calendar.HOUR_OF_DAY));
 		int s10 = settings.getInt("p10", currentTime.get(Calendar.MINUTE));
-		picker.setCurrentHour(s9);
-		picker.setCurrentMinute(s10);
+		picker.setCurrentHour(currentTime.get(Calendar.HOUR_OF_DAY));
+		picker.setCurrentMinute(currentTime.get(Calendar.MINUTE));
+//		picker.setCurrentHour(s9);
+//		picker.setCurrentMinute(s10);
 	//	int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
 		//threshOld.setText(Integer.toString(s1));
 	//	Log.d("s1 reached", s1+"");
