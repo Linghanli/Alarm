@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.util.Calendar;
 import java.util.List;
 import java.util.Properties;
 
@@ -18,13 +19,14 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
+import android.app.AlarmManager;
 import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.hardware.Sensor;
-import android.hardware.SensorEvent;
-import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.util.Log;
@@ -40,6 +42,7 @@ import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
+import android.widget.TimePicker;
 import android.widget.Toast;
 
 public class SettingsFragment extends Fragment implements AsyncResponse {
@@ -47,11 +50,15 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	  private SensorManager mSensorManager;  
 	  private List<Sensor> sensors;
 	  private Sensor mAccelerometer;	  
-	 // public static int [] THRESHOLD = {2000, 1000, 400};
-	 // private static int NUM_THRESHOLD = 2;
-	  private static int UPPER_SPEED_LIMIT = 3000;
-	  
-	  
+	  //shake detection parameters
+	  private static final int DEFAULT_THRESHOLD = 400;
+	  private static final int DEFAULT_SHAKE_DURATION = 300;
+	  private static final int DEFAULT_PROCESS_DURATION = 2000;
+	  private static int SHAKE_THRESHOLD = 1000;
+	  private long SHAKE_DURATION = 200;
+	  private long PROCESS_DURATION = 2000;
+	  private static int UPPER_SPEED_LIMIT = 3000;	  
+	  //shake detection logic
 	  private long lastUpdate;
 	  private boolean firstShake;
 	  private long firstShakeTime;
@@ -62,72 +69,57 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	  private float last_y = (float) 9.8;
 	  private float last_z = 0;
 	  private boolean shaken = false;
-	  //shake detection
 	  private int sum;
 	  private TextView tapDetection;
 	  private float speed=0;
-	  // Ish's section
+    // shared preference
 	public static final String PREF = "EceAlarmApp";
-	//private SeekBar tapSensitivity;
+
+	//UI widgets
+	private TimePicker picker;
 	private Spinner snoozeSpinner;
 	private Switch weatherSwitch;
 	private EditText city;
 	private Button citySearch;
-	
+	//Voice Settings
 	private Properties configProp;
 	RetrieveXML asyncTask;
 	private String queryCity;
 	private String woeId;
 	
-	private static final int DEFAULT_THRESHOLD = 400;
-	private static final int DEFAULT_SHAKE_DURATION = 300;
-	private static final int DEFAULT_PROCESS_DURATION = 2000;
-
-	  private static int SHAKE_THRESHOLD = 1000;
-	  private long SHAKE_DURATION = 200;
-	  private long PROCESS_DURATION = 2000;
 	  
-	private EditText threshOld;
-	private EditText shakeDuration;
-	private EditText processDuration;
 	
     public SettingsFragment() {
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
-            Bundle savedInstanceState) {
-    	//load config
+            Bundle savedInstanceState) 
+    {
+//        //Accelerometer
+//        mSensorManager = (SensorManager)getActivity().getApplicationContext().getSystemService(Context.SENSOR_SERVICE);
+//		sensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
+//	    mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+//		if(sensors.size() > 0) 
+//		{ 
+//		  	mAccelerometer = sensors.get(0); 
+//		} 
+		//mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+    	//shake detection logic initialization
+//        sum = 0;
+//        firstShake = false;
+//        lastUpdate = System.currentTimeMillis();
+
+    	//load pre-set configuration 
     	loadProperties();
-    	Log.d("OnCreate View", "reached 1");
-    	//Accelerometer
-        sum = 0;
-        firstShake = false;
-         //Accelerometer
-          mSensorManager = (SensorManager)getActivity().getApplicationContext().getSystemService(Context.SENSOR_SERVICE);
-		  sensors = mSensorManager.getSensorList(Sensor.TYPE_ACCELEROMETER);
-		  mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		  if(sensors.size() > 0) 
-		  { 
-		  	mAccelerometer = sensors.get(0); 
-		  } 
-		    mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-		    lastUpdate = System.currentTimeMillis();
-		  //Ish's section
     	
+    	//UI intialization
     	View v = inflater.inflate(R.layout.activity_settings, container, false);
     	//tapSensitivity = (SeekBar) v.findViewById(R.id.seekBar1);
     	//tapSensitivity.setMax(NUM_THRESHOLD);
-    	final Button autoConfigButton = (Button) v.findViewById(R.id.autoConfig);
-    	autoConfigButton.setOnClickListener(
-    			new View.OnClickListener(){
-    				public void onClick(View v){
-    					getFragmentManager().beginTransaction().addToBackStack(null).commit();
-	    				Intent intent = new Intent(getActivity(), AutoConfig.class);	
-	    				getActivity().startActivity(intent);
-    				}
-    			}
-    	);
+
+    	
+        picker = (TimePicker) v.findViewById(R.id.timepicker);
     	snoozeSpinner = (Spinner) v.findViewById(R.id.spinner1);
     	weatherSwitch = (Switch) v.findViewById(R.id.switch1);
        	city = (EditText) v.findViewById(R.id.weather);
@@ -162,81 +154,63 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 					citySearch.setEnabled(isChecked);
 				}
 			});
-    	
-    	//Shake Detection
-    	tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
-    	//Change Here
-//    	threshOld = (EditText)v.findViewById(R.id.threshold);
-//    	shakeDuration = (EditText)v.findViewById(R.id.shake_duration);
-//    	processDuration = (EditText)v.findViewById(R.id.process_duration);
+
     	final Button updateButton = (Button) v.findViewById(R.id.update);
     	updateButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 updateSettings();
             }
         });
+    	
+    	//tapDetection = (TextView)v.findViewById(R.id.shakeDetectionTest);
 
     	Log.d("OnCreate View", "reached 3");
  		return v;
     }
 
-	//sensor management     
-		private final SensorEventListener mySensorListener = new SensorEventListener()  { 
-			public void onSensorChanged(SensorEvent event)  {    	
-					    curTime = System.currentTimeMillis();
-						//Log.d("Sum", sum + "");
-					// only allow one update every 100ms.
-						delay = (curTime - lastUpdate);
-						lastUpdate = curTime;
-						
-						float x = event.values[0]; 
-						float y = event.values[1]; 
-						float z = event.values[2]; 
-						
-						//speed = Math.abs(x+y+z - last_x - last_y - last_z) / delay * 10000;
-						speed = Math.abs(z - last_z) / delay * 10000;
-						if (speed > SHAKE_THRESHOLD && speed < UPPER_SPEED_LIMIT){
-							if(firstShake==false){
-								firstShake = true;
-								shaken = true;
-								firstShakeTime = curTime;
-								beginShakeTime = curTime;
-							}
-							if(shaken==false){
-								shaken = true;
-								beginShakeTime = curTime;
-							}
-						}
-						else if(shaken == true){
-							if((curTime-beginShakeTime)>SHAKE_DURATION){
-								shaken = false;
-								sum = sum + 1;
-								tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
-							}
-							
-						}           
-						
-						if(curTime - firstShakeTime > PROCESS_DURATION){
-							if(shaken==true){
-								shaken = false;
-								sum = sum+1;
-								//tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
-							}
-							tapDetection.setText("Detected" + " " + Integer.toString(0) + " " + "taps");
-							firstShake=false;
-							sum = 0;
-					    }   			        	    
-				
-						last_x = x;
-						last_y = y;
-						last_z = z;
-			} 
-			public void onAccuracyChanged(Sensor sensor, int accuracy) {}
-		};
+    private void updateAlarmTime(SharedPreferences.Editor editor){
+		Calendar alarmTime = Calendar.getInstance();	
+		Calendar currentTime = Calendar.getInstance();        
+		alarmTime.set(Calendar.HOUR_OF_DAY, picker.getCurrentHour());
+		alarmTime.set(Calendar.MINUTE, picker.getCurrentMinute());
+		alarmTime.set(Calendar.SECOND, 0);
+		alarmTime.set(Calendar.MILLISECOND, 0);
+        if ((alarmTime.get(Calendar.HOUR_OF_DAY)==currentTime.get(Calendar.HOUR_OF_DAY) && 
+        		alarmTime.get(Calendar.MINUTE)==currentTime.get(Calendar.MINUTE))){
+        	// Do nothing
+        }
+        else if (alarmTime.before(currentTime))	// add one day to alarm time
+        	alarmTime.add(Calendar.DAY_OF_MONTH, 1); 
+
+		long diff =  alarmTime.getTimeInMillis() - System.currentTimeMillis();
+		long diffMinutes = diff / (60 * 1000) % 60;
+		long diffHours = diff / (60 * 60 * 1000) % 24;
+		if (diffMinutes == 0 && diffHours == 0)
+		{
+			//tView.setText("Alarm triggers in less than 1 min");
+			diff = 10000;
+		}
+			//tView.setText("Alarm triggers in "+diffHours+" hours "+diffMinutes+ "mins" );
+		long setAlarm = System.currentTimeMillis() + diff;
+		editor.putLong("p8", setAlarm);
+		editor.putInt("p9", alarmTime.get(Calendar.HOUR_OF_DAY));
+		editor.putInt("p10", alarmTime.get(Calendar.MINUTE));
+		editor.putLong("diff", diff);
+		editor.putLong("diffHours", diffHours);
+		editor.putLong("diffMinutes", diffMinutes);
+		
+		Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);
+	    AlarmManager alarmManager = (AlarmManager) getActivity().getSystemService(Context.ALARM_SERVICE);
+        alarmManager.set(AlarmManager.RTC_WAKEUP, setAlarm, PendingIntent.getBroadcast(getActivity(),1,intentAlarm, PendingIntent.FLAG_UPDATE_CURRENT));
+
+	    editor.putBoolean("disableAlarmButton", true);
+    }
+    
     public void updateSettings(){
 		SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
 		SharedPreferences.Editor editor = settings.edit();
 		int j; 
+		updateAlarmTime(editor);
 		//editor.putInt("p1", j = tapSensitivity.getProgress());
 		editor.putInt("p2", snoozeSpinner.getSelectedItemPosition());
 		editor.putBoolean("p3", weatherSwitch.isChecked());
@@ -252,8 +226,10 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		//SHAKE_THRESHOLD=THRESHOLD[j];
 		if (editor.commit())
 			Toast.makeText(getActivity(), "Settings Saved", Toast.LENGTH_SHORT).show();
+		
+	    getFragmentManager().popBackStack();
 	}
-
+   
 //    public void onActivityResult(int requestCode, int resultCode, Intent data) {
 //    	  super.onActivityResult()
 //    	  if (requestCode == 1) {
@@ -351,6 +327,11 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		weatherSwitch.setChecked(s3);
 		city.setText(s4);
 		woeId = settings.getString("p5", null);
+		Calendar currentTime = Calendar.getInstance();
+		int s9 = settings.getInt("p9", currentTime.get(Calendar.HOUR_OF_DAY));
+		int s10 = settings.getInt("p10", currentTime.get(Calendar.MINUTE));
+		picker.setCurrentHour(s9);
+		picker.setCurrentMinute(s10);
 	//	int s1 = settings.getInt("p1", DEFAULT_THRESHOLD);
 		//threshOld.setText(Integer.toString(s1));
 	//	Log.d("s1 reached", s1+"");
@@ -360,24 +341,24 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 	//	long s7 = settings.getLong("p7", DEFAULT_PROCESS_DURATION);
 		//processDuration.setText(Integer.toString(s7));
 
-    	Log.d("OnStart", "reached 5");
-    	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
-		Log.d("onStart", "started");
+//    	mSensorManager.registerListener(mySensorListener, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
     }
     
     @Override
     public void onStop() {
-	    mSensorManager.unregisterListener(mySensorListener);
-	    updateSettings();
-    	getFragmentManager().popBackStack();
+//	    mSensorManager.unregisterListener(mySensorListener);
+	  //  updateSettings();
+    	FragmentManager fm = getFragmentManager();
+    	if(fm.getBackStackEntryCount()>1)
+    		fm.popBackStack();
 	    Log.d("onStop is Called", "settingsFragment");
     	super.onStop();
     }
     
     @Override
     public void onPause() {
-    	mSensorManager.unregisterListener(mySensorListener);
-	    updateSettings();
+ //   	mSensorManager.unregisterListener(mySensorListener);
+	    //updateSettings();
 	    Log.d("onpause is Called", "settingsFragment");
 	    super.onPause();
     }
@@ -401,4 +382,55 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
             imm.hideSoftInputFromWindow(city.getWindowToken(), 0);
         }
     }
+    
+
+//	//sensor management     
+//	private final SensorEventListener mySensorListener = new SensorEventListener()  { 
+//			public void onSensorChanged(SensorEvent event)  {    	
+//					    curTime = System.currentTimeMillis();
+//						//Log.d("Sum", sum + "");
+//					// only allow one update every 100ms.
+//						delay = (curTime - lastUpdate);
+//						lastUpdate = curTime;
+//						
+//						float z = event.values[2]; 
+//						
+//						//speed = Math.abs(x+y+z - last_x - last_y - last_z) / delay * 10000;
+//						speed = Math.abs(z - last_z) / delay * 10000;
+//						if (speed > SHAKE_THRESHOLD && speed < UPPER_SPEED_LIMIT){
+//							if(firstShake==false){
+//								firstShake = true;
+//								shaken = true;
+//								firstShakeTime = curTime;
+//								beginShakeTime = curTime;
+//							}
+//							if(shaken==false){
+//								shaken = true;
+//								beginShakeTime = curTime;
+//							}
+//						}
+//						else if(shaken == true){
+//							if((curTime-beginShakeTime)>SHAKE_DURATION){
+//								shaken = false;
+//								sum = sum + 1;
+//								//tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
+//							}
+//							
+//						}           
+//						
+//						if(curTime - firstShakeTime > PROCESS_DURATION){
+//							if(shaken==true){
+//								shaken = false;
+//								sum = sum+1;
+//								//tapDetection.setText("Detected" + " " + Integer.toString(sum) + " " + "taps");
+//							}
+//							//tapDetection.setText("Detected" + " " + Integer.toString(0) + " " + "taps");
+//							firstShake=false;
+//							sum = 0;
+//					    }   			        	    
+//				
+//						last_z = z;
+//			} 
+//			public void onAccuracyChanged(Sensor sensor, int accuracy) {}
+//	};
 }
