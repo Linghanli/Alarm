@@ -196,7 +196,7 @@ public class SettingsFragment extends Fragment implements AsyncResponse {
 		editor.putInt("p9", alarmTime.get(Calendar.HOUR_OF_DAY));
 		editor.putInt("p10", alarmTime.get(Calendar.MINUTE));
 		editor.putLong("diff", diff);
-		editor.putLong("diffHours", diffMinutes);
+		editor.putLong("diffHours", diffHours);
 		editor.putLong("diffMinutes", diffMinutes);
 		
 		Intent intentAlarm = new Intent(getActivity(), AlarmReceiver.class);

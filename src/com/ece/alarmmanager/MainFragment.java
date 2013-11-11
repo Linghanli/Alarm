@@ -115,7 +115,7 @@ public class MainFragment extends Fragment {
     	disableButton = false;
     	alarmButton.setText("Schedule Alarm");
     	tView.setText("Alarm is Unscheduled");
-    	Toast.makeText(getActivity().getApplicationContext(), "Alarm Disabled", Toast.LENGTH_LONG).show();
+    	Toast.makeText(getActivity().getApplicationContext(), "Alarm Disabled", Toast.LENGTH_SHORT).show();
     	
     	SharedPreferences settings = getActivity().getSharedPreferences(PREF, 0);
 		SharedPreferences.Editor editor = settings.edit();
@@ -150,6 +150,9 @@ public class MainFragment extends Fragment {
 
 		}
 		else
+		{
+			tView.setText("Alarm is Unscheduled");
 			alarmButton.setText("Schedule Alarm");
+		}
     }
 }
